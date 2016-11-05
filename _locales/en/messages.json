@@ -1,0 +1,10 @@
+{
+  "recordBtnText": {
+    "message":"Enter Recording Mode",
+    "description":""
+  },
+  "finishBtnText": {
+    "message":"Finish This Test Case",
+    "description":""
+  }
+}

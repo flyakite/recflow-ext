@@ -1,0 +1,24 @@
+{
+  "name": "recflow-ext",
+  "version": "0.1.0",
+  "description": "RecFlow Chrome Extension",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyakite/recflow-ext.git"
+  },
+  "keywords": [
+    "RecFlow"
+  ],
+  "author": "Shih-Wen Su",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/flyakite/recflow-ext/issues"
+  },
+  "homepage": "https://github.com/flyakite/recflow-ext#readme",
+  "dependencies": {
+  }
+}
