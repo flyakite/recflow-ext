@@ -24,15 +24,16 @@ chrome.runtime.onMessage.addListener(
     console.log(request);
     console.log('sender');
   	console.log(sender);
-    if(request.action == 'content-script-init'){
+    if(request.type == 'content-script-init'){
       contentScriptInit(request, sender, sendResponse);
-    }else if(request.action == 'start-recording'){
+    }else if(request.type == 'start-recording'){
       startRecording(request, sender, sendResponse);
-    }else if(request.action == 'record-step'){
+    }else if(request.type == 'record-step'){
       recordStep(request, sender, sendResponse);
-    }else if(request.action == 'finish-recording'){
+    }else if(request.type == 'finish-recording'){
       finishRecording(request, sender, sendResponse);
-
+    }else if(request.type == 'command'){
+      console.log('save command', request.data);
     }
   }
 );
@@ -46,27 +47,30 @@ var recorded = {
 };
 
 var contentScriptInit = function(request, sender, sendResponse) {
-  var action = '';
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    //Uponn init, check if the tab is the one we want to continue recording
-    if(state.recording && state.tabId && state.tabId === tabs[0].id){
-      action = 'continue-recording';
-      chrome.browserAction.setBadgeText({'text':'recording'});
-    }
-    sendResponse({action:action, state:state});
-    // chrome.tabs.sendMessage(tabs[0].id, {action:action, state:state}, function(response) {
-    //   console.log('responseOfContentScriptInit', response);
-    // });
-  });
+  var type = '';
+  //Uponn init, check if the tab is the one we want to continue recording
+  console.log(state.tabId, sender.tab.id);
+  if(state.recording && state.tabId && state.tabId === sender.tab.id){
+    type = 'continue-recording';
+    chrome.browserAction.setBadgeText({'text':'recording'});
+    chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
+  }
+  console.log('responseToContentScriptInit', {type:type, state:state});
+  sendResponse({type:type, state:state});
+  // chrome.tabs.sendMessage(tabs[0].id, {type:type, state:state}, function(response) {
+  //   console.log('responseOfContentScriptInit', response);
+  // });
 };
 
 var startRecording = function(request, sender, sendResponse) {
   state.recording = true;
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    console.log('tabs[0]');
+    console.log(tabs[0]);
     state.tabId = tabs[0].id;
     chrome.tabs.reload(tabs[0].id); //refresh page to start
-    //TODO: sendResponse to show recording page action icon
-    // chrome.tabs.sendMessage(tabs[0].id, {action:'start-recording', state:state}, function(response) {
+    //TODO: sendResponse to show recording page type icon
+    // chrome.tabs.sendMessage(tabs[0].id, {type:'start-recording', state:state}, function(response) {
     //   console.log('responseOfStartRecording', response);
     // });
   });
@@ -78,8 +82,10 @@ var recordStep = function(request, sender, sendResponse) {
 
 var finishRecording = function(request, sender, sendResponse) {
   state.recording = false;
-  state.tabId = undefined;
   chrome.browserAction.setBadgeText({'text':''});
+  chrome.tabs.sendMessage(state.tabId, {type:'finish-recording', state:state}, function(response) {
+    console.log('responseOfFinishRecording', response);
+  });
+  state.tabId = undefined;
   //post to server
-  
 };

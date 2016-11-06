@@ -15,7 +15,7 @@ recordBtn.innerHTML = chrome.i18n.getMessage('recordBtnText');
 finishBtn.innerHTML = chrome.i18n.getMessage('finishBtnText');
 
 recordBtn.addEventListener('click', function() {
-  chrome.runtime.sendMessage({'action':'start-recording'}, function(response) {
+  chrome.runtime.sendMessage({'type':'start-recording'}, function(response) {
     console.log('sendMessage');
     console.log(response);
   })
@@ -23,7 +23,7 @@ recordBtn.addEventListener('click', function() {
 });
 
 finishBtn.addEventListener('click', function() {
-  chrome.runtime.sendMessage({'action':'finish-recording'}, function(response) {
+  chrome.runtime.sendMessage({'type':'finish-recording'}, function(response) {
     console.log('sendMessage');
     console.log(response);
   })
