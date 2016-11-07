@@ -20,20 +20,15 @@ if (!chrome.runtime) {
 //example of using a message handler from the inject scripts
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    console.log('request');
-    console.log(request);
-    console.log('sender');
-  	console.log(sender);
+    console.log('sender', sender, 'request', request);
     if(request.type == 'content-script-init'){
       contentScriptInit(request, sender, sendResponse);
     }else if(request.type == 'start-recording'){
       startRecording(request, sender, sendResponse);
-    }else if(request.type == 'record-step'){
+    }else if(request.type == 'command'){
       recordStep(request, sender, sendResponse);
     }else if(request.type == 'finish-recording'){
       finishRecording(request, sender, sendResponse);
-    }else if(request.type == 'command'){
-      console.log('save command', request.data);
     }
   }
 );
@@ -49,13 +44,13 @@ var recorded = {
 var contentScriptInit = function(request, sender, sendResponse) {
   var type = '';
   //Uponn init, check if the tab is the one we want to continue recording
-  console.log(state.tabId, sender.tab.id);
   if(state.recording && state.tabId && state.tabId === sender.tab.id){
     type = 'continue-recording';
     chrome.browserAction.setBadgeText({'text':'recording'});
     chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
+  }else{
+    type = 'initialized';
   }
-  console.log('responseToContentScriptInit', {type:type, state:state});
   sendResponse({type:type, state:state});
   // chrome.tabs.sendMessage(tabs[0].id, {type:type, state:state}, function(response) {
   //   console.log('responseOfContentScriptInit', response);
@@ -77,15 +72,28 @@ var startRecording = function(request, sender, sendResponse) {
 };
 
 var recordStep = function(request, sender, sendResponse) {
-
+  var command = request.data;
+  var step;
+  if(command.cmd === 'sendKeys'){
+    if(recorded.steps.length == 0 || recorded.steps[-1].type !== 'sendKeys'){
+      step = {
+        keys: command.data.keys,
+      }
+    }
+    else{
+      recorded.steps[-1].keys += command.data.keys
+    }
+  }
 };
 
 var finishRecording = function(request, sender, sendResponse) {
   state.recording = false;
   chrome.browserAction.setBadgeText({'text':''});
-  chrome.tabs.sendMessage(state.tabId, {type:'finish-recording', state:state}, function(response) {
-    console.log('responseOfFinishRecording', response);
-  });
+  if(state.tabId){
+    chrome.tabs.sendMessage(state.tabId, {type:'finish-recording', state:state}, function(response) {
+      console.log('responseOfFinishRecording', response);
+    });
+  }
   state.tabId = undefined;
   //post to server
 };
