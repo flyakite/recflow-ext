@@ -218,9 +218,9 @@
             if(/^[azcxv]$/i.test(typedCharacter)){
               if(isModifierKeyRecord === false){
                 isModifierKeyRecord = true;
-                // saveCommand('keyDown', {
-                //   character: stickModifierKey
-                // });
+                saveCommand('keyDown', {
+                  character: stickModifierKey
+                });
               }
               // saveCommand('sendKeys', {
               //   keys: typedCharacter.toLowerCase()
@@ -296,6 +296,7 @@
 
     document.addEventListener('change', function(event){
       var target = event.target;
+      // console.log('change event', target, isRecording, isFileInput(target), target.tagName, isDomVisible(target));
       if(isRecording){
         if(isFileInput(target)){
           var path = getDomPath(target);
@@ -339,7 +340,11 @@
                 class_name: target.className,
                 text: getTargetText(target)
               });
+            }else{
+              console.log('path is null', target);
             }
+          }else{
+            console.log('targt !isDomVisible', target);
           }
         }
       }
@@ -419,6 +424,15 @@
         target = target.parentNode;
       }
     }
+  }
+
+  function byteLen(text){
+    var count = 0;
+    for(var i=0,len=text.length;i<len;i++){
+      char = text.charCodeAt(i);
+      count += char > 255 ? 2 : 1;
+    }
+    return count;
   }
 
   function leftstr(text, limit){
@@ -760,72 +774,8 @@
         return null;
       }
     }
-// var e1;
-// var ebody, einput;
-// document.body.addEventListener('click', function(e) {
-//   console.log('body', e);
-//   ebody = e;
-//   if(einput){
-//     for(var p in ebody){
-//       if(ebody[p] !== einput[p]){
-//         console.log('ebody', p, ebody[p]);
-//         console.log('einput', p, einput[p]);
-//       }
-//     }
-//   }
-// });
-// document.onclick = function(e) {
-//   console.log('document', e);
-// };
-// var els = document.getElementsByTagName('input');
-// for(var i = els.length;i--;){
-//   els[i].addEventListener('click', function(e) {
-//     console.log('self', e);
-//     einput = e;
-//     if(ebody){
-//       for(var p in ebody){
-//         if(ebody[p] !== einput[p]){
-//           console.log('ebody', p, ebody[p]);
-//           console.log('einput', p, einput[p]);
-//         }
-//       }
-//     }
-//   });
-// }
-// var pp = document.getElementById('PROFILE_PHOTO');
-// pp.addEventListener('change', function(e) {
-//   console.log('pp changed');
-//   console.dir(e);
 
-//   //filereader
-//   var reader = new FileReader();
-//   reader.onload = function(eonload) {
-//     console.log('onload', eonload.target.result);
-//   };
-
-//   reader.readAsDataURL(e.target.files[0]);
-
-//   // canvas
-//   // var canvas = document.createElement('canvas');
-//   // context = canvas.getContext('2d')
-//   // document.body.appendChild(canvas);
-//   // var img = new Image();
-//   // console.log('got image value', pp.value);
-//   // img.src = pp.value;
-//   // console.log('load image', img.src);
-//   // img.onload = function() {
-//   //   console.log('image loaded');
-//   //   context.drawImage(img, 200, 200);
-//   //   console.log(canvas.toDataURL('image/jpeg'));
-//   // }
-// })
-// // clientX
-// // clientY
-// // offsetX
-// // offsetY
-// // detail(mouse click in short amount of time)
-// // target
-// // currentTarget
-// // eventPhase(0:'none',1:'capturing',3:'propagating')
-
+    function isNotInToolsPannel(target){
+      return true;
+    }
 })();

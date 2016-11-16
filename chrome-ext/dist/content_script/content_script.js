@@ -6,6 +6,13 @@
   var isRecording = false;
   var isStopEvent = false;
 
+  var testVars = {};
+  var arrPathAttrs = ['data-id', 'data-name', 'type', 'data-type', 'data-role', 'data-value'];
+  var reAttrValueBlack = /^$/;
+  var specLists = [];
+
+  var reHoverClass = /(^|[^a-z0-9])(on)?(hover|over|active|current)([^a-z0-9]|$)/i;
+
   if (!chrome.runtime) {
       // Chrome 20-21
       chrome.runtime = chrome.extension;
@@ -83,6 +90,9 @@
               x: x,
               y: y,
               button: event.button,
+              tag: target.tagName,
+              id: target.id,
+              class_name: target.className,
               text: getTargetText(target)
             });
           }
@@ -122,6 +132,9 @@
               x: x,
               y: y,
               button: event.button,
+              tag: target.tagName,
+              id: target.id,
+              class_name: target.className,
               text: getTargetText(target)
             });
           }
@@ -130,6 +143,122 @@
       else if(isStopEvent){
         event.stopPropagation();
         event.preventDefault();
+      }
+    }, true);
+
+    var modifierKeys = {
+      17: 'CTRL', // Ctrl
+      18: 'ALT', // Alt
+      16: 'SHIFT', // Shift
+      91: 'META' // Command/Meta
+    };
+
+    var NonTextKeys = {
+      8: 'BACK_SPACE', // BACK_SPACE
+      9: 'TAB', // TAB
+      13: 'ENTER', // ENTER
+      19: 'PAUSE', // PAUSE
+      27: 'ESCAPE', // ESCAPE
+      33: 'PAGE_UP', // PAGE_UP
+      34: 'PAGE_DOWN', // PAGE_DOWN
+      35: 'END', // END
+      36: 'HOME', // HOME
+      37: 'LEFT', // LEFT
+      38: 'UP', // UP
+      39: 'RIGHT', // RIGHT
+      40: 'DOWN', // DOWN
+      45: 'INSERT', // INSERT
+      46: 'DELETE' // DELETE
+    };
+
+    // catch keydown event
+    var lastModifierKeydown = null;
+    var isModifierKeyRecord = false; // save modifier keys?
+    document.addEventListener('keydown', function(event){
+      var target = event.target;
+      if(isNotInToolsPannel(target)){
+        var keyCode = event.keyCode;
+        var modifierKey = modifierKeys[keyCode];
+        var NonTextKey = NonTextKeys[keyCode];
+        if(isRecording){
+          var stickModifierKey;
+          if(event.ctrlKey){
+            stickModifierKey = 'CTRL';
+          }
+          else if(event.altKey){
+            stickModifierKey = 'ALT';
+          }
+          else if(event.shiftKey){
+            stickModifierKey = 'SHIFT';
+          }
+          else if(event.metaKey){
+            stickModifierKey = 'META';
+          }
+          if(modifierKey){
+            // modifier key trigger keyDown once
+            if(isModifierKeyRecord && modifierKey !== lastModifierKeydown){
+              lastModifierKeydown = modifierKey;
+              saveCommand('keyDown', {
+                character: modifierKey
+              });
+            }
+          }
+          else if(NonTextKey){
+            if(stickModifierKey && isModifierKeyRecord === false){
+              isModifierKeyRecord = true;
+              saveCommand('keyDown', {
+                character: stickModifierKey
+              });
+            }
+            saveCommand('sendKeys', {
+              keys: '!@Keys.'+NonTextKey
+            });
+          }
+          else if(stickModifierKey === 'CTRL'){
+            var typedCharacter = String.fromCharCode(keyCode);
+            if(/^[azcxv]$/i.test(typedCharacter)){
+              if(isModifierKeyRecord === false){
+                isModifierKeyRecord = true;
+                saveCommand('keyDown', {
+                  character: stickModifierKey
+                });
+              }
+              // saveCommand('sendKeys', {
+              //   keys: typedCharacter.toLowerCase()
+              // });
+            }
+          }
+        }
+        else if(isStopEvent){
+          event.stopPropagation();
+          event.preventDefault();
+        }
+      }
+    }, true);
+
+    // catch keyup event
+    document.addEventListener('keyup', function(event){
+      var target= event.target;
+      if(isNotInToolsPannel(target)){
+        var modifierKey = modifierKeys[event.keyCode];
+        if(isRecording){
+          if(isModifierKeyRecord && modifierKey){
+            isModifierKeyRecord = false;
+            lastModifierKeydown = null;
+            saveCommand('keyUp', {
+              character: modifierKey
+            });
+          }
+        }
+        else{
+          if(!isRecording && event.keyCode === 27){
+            setGlobalWorkMode('record');
+          }
+          if(isStopEvent){
+            event.stopPropagation();
+            event.preventDefault();
+          }
+        }
       }
     }, true);
 
@@ -168,6 +297,7 @@
 
     document.addEventListener('change', function(event){
       var target = event.target;
+      console.log('change event', target, isRecording, isFileInput(target), target.tagName, isDomVisible(target));
       if(isRecording){
         if(isFileInput(target)){
           var path = getDomPath(target);
@@ -178,6 +308,9 @@
             saveCommand('uploadFile', {
               path: path,
               filename: match[0],
+              tag: target.tagName,
+              id: target.id,
+              class_name: target.className,
               text: getTargetText(target)
             });
           }
@@ -203,9 +336,16 @@
                 path: path,
                 type: type,
                 value: value,
+                tag: target.tagName,
+                id: target.id,
+                class_name: target.className,
                 text: getTargetText(target)
               });
+            }else{
+              console.log('path is null', target);
             }
+          }else{
+            console.log('targt !isDomVisible', target);
           }
         }
       }
@@ -222,6 +362,7 @@
   }
   function saveCommand(cmd, data){
     var frameId = getFrameId();
+    data.time = (new Date()).getTime();
     var cmdData = {
       frame: frameId,
       cmd: cmd,
@@ -286,6 +427,80 @@
     }
   }
 
+  function byteLen(text){
+    var count = 0;
+    for(var i=0,len=text.length;i<len;i++){
+      char = text.charCodeAt(i);
+      count += char > 255 ? 2 : 1;
+    }
+    return count;
+  }
+
+  function leftstr(text, limit){
+    var substr = '';
+    var count = 0;
+    var char;
+    for(var i=0,len=text.length;i<len;i++){
+      char = text.charCodeAt(i);
+      substr += text.charAt(i);
+      count += char > 255 ? 2 : 1;
+      if(count >= limit){
+        return substr;
+      }
+    }
+    return substr;
+  }
+
+  function getTargetText(target){
+    var nodeName = target.nodeName;
+    var id = target.getAttribute('id');
+    var text = '';
+    if(nodeName === 'INPUT'){
+      var type = target.getAttribute('type');
+      switch(type){
+        case 'button':
+        case 'reset':
+        case 'submit':
+          text = target.getAttribute('value');
+          break;
+        default:
+          var parentNode = target.parentNode;
+          if(parentNode.nodeName === 'LABEL'){
+            text = parentNode.textContent;
+          }
+          else if(id){
+            var labelForElement = findDomPathElement('label[for="'+id+'"]');
+            if(labelForElement.length > 0){
+              text = labelForElement[0].textContent;
+            }
+            else{
+              text = target.getAttribute('name');
+            }
+          }
+          else{
+            text = target.getAttribute('name');
+          }
+      }
+    }
+    else if(nodeName === 'SELECT'){
+      text = target.getAttribute('name');
+    }
+    else{
+      text = target.textContent;
+    }
+    text = text || '';
+    text = text.replace(/\s*\r?\n\s*/g,' ');
+    text = text.replace(/^\s+|\s+$/g, '');
+    var textLen = byteLen(text);
+    if(textLen <= 60){
+      text = textLen > 20 ? leftstr(text, 20) + '...' : text;
+    }
+    else{
+      text = '';
+    }
+    return text;
+  }
+
   function getClosestIdNode(target){
     var current = target;
     var body = target.ownerDocument.body;
@@ -315,13 +530,13 @@
     var nameValue = target.getAttribute && target.getAttribute('name');
     var typeValue = target.getAttribute && target.getAttribute('type');
     var valueValue = target.getAttribute && target.getAttribute('value');
-    // 检查目标元素自身是否有唯一id
+    // only one target with this id?
     if(idValue && reAttrValueBlack.test(idValue) === false && checkUniqueSelector(relativeNode, '#'+idValue)){
-      // id定位
+      // locate element by id
       return '#'+idValue;
     }
     else if(tagName === 'input'){
-      // 表单项特殊校验
+      // special form validation
       tempPath = nameValue ? tagName + '[name="'+nameValue+'"]' : tagName;
       switch(typeValue){
         case 'radio':
@@ -335,14 +550,14 @@
       }
     }
     else if(nameValue){
-      // 非input，但有name值
+      // not an input, but has a 'name'
       tempPath = tagName + '[name="'+nameValue+'"]'
       if(tempPath && reAttrValueBlack.test(nameValue) === false && checkUniqueSelector(relativeNode, tempPath)){
         return tempPath;
       }
     }
     else{
-      // 检查目标是否有父容器有唯一id
+      // parent has unique id?
       var idNodeInfo = getClosestIdNode(target);
       if(idNodeInfo){
         relativeNode = idNodeInfo.node;
@@ -369,12 +584,12 @@
   function getSelectorElement(target, relativeNode, childPath){
     var tagName = target.nodeName.toLowerCase();
     var elementPath = tagName, tempPath;
-    // 校验tagName是否能唯一定位
+    // validate if target can be located by tagName
     tempPath = elementPath + (childPath ? ' > ' + childPath : '');
     if(checkUniqueSelector(relativeNode, tempPath)){
       return '!' + tempPath;
     }
-    // 校验class能否定位
+    // validate if target can be located by className
     var relativeClass = null;
     var classValue = target.getAttribute && target.getAttribute('class');
     if(classValue){
@@ -387,7 +602,7 @@
             return '!' + tempPath;
           }
           else{
-            // 无法绝对定位,再次测试是否可以在父节点中相对定位自身
+            // not able to locate the target by abosolute path, try relative path
             var parent = target.parentNode;
             if(parent){
               var element = parent.querySelectorAll('.'+className);
@@ -399,7 +614,7 @@
         }
       }
     }
-    // 校验属性是否能定位
+    // locate target by attribute
     var attrName, attrValue;
     for(var i in arrPathAttrs){
       attrName = arrPathAttrs[i];
@@ -412,7 +627,7 @@
         }
       }
     }
-    // 父元素定位
+    // locate parent
     if(relativeClass){
       elementPath += '.' + relativeClass;
     }
@@ -493,18 +708,18 @@
       }
     }
     if(labelDom){
-      // label标签，替换为目标表单项
+      // replaced lable by target element
       var forValue = labelDom.getAttribute && labelDom.getAttribute('for');
       var labelTargets;
       if(forValue){
-        // 有指定for
+        // has a 'for'
         labelTargets = findDomPathElement('#'+forValue);
         if(labelTargets.length === 1 && isDomVisible(labelTargets[0])){
           return labelTargets[0];
         }
       }
       else{
-        // 没有指定for
+        // no 'for'
         labelTargets = labelDom.querySelectorAll('input');
         if(labelTargets.length === 1 && isDomVisible(labelTargets[0])){
           return labelTargets[0];
@@ -560,74 +775,10 @@
         return null;
       }
     }
-// var e1;
-// var ebody, einput;
-// document.body.addEventListener('click', function(e) {
-//   console.log('body', e);
-//   ebody = e;
-//   if(einput){
-//     for(var p in ebody){
-//       if(ebody[p] !== einput[p]){
-//         console.log('ebody', p, ebody[p]);
-//         console.log('einput', p, einput[p]);
-//       }
-//     }
-//   }
-// });
-// document.onclick = function(e) {
-//   console.log('document', e);
-// };
-// var els = document.getElementsByTagName('input');
-// for(var i = els.length;i--;){
-//   els[i].addEventListener('click', function(e) {
-//     console.log('self', e);
-//     einput = e;
-//     if(ebody){
-//       for(var p in ebody){
-//         if(ebody[p] !== einput[p]){
-//           console.log('ebody', p, ebody[p]);
-//           console.log('einput', p, einput[p]);
-//         }
-//       }
-//     }
-//   });
-// }
-// var pp = document.getElementById('PROFILE_PHOTO');
-// pp.addEventListener('change', function(e) {
-//   console.log('pp changed');
-//   console.dir(e);
 
-//   //filereader
-//   var reader = new FileReader();
-//   reader.onload = function(eonload) {
-//     console.log('onload', eonload.target.result);
-//   };
-
-//   reader.readAsDataURL(e.target.files[0]);
-
-//   // canvas
-//   // var canvas = document.createElement('canvas');
-//   // context = canvas.getContext('2d')
-//   // document.body.appendChild(canvas);
-//   // var img = new Image();
-//   // console.log('got image value', pp.value);
-//   // img.src = pp.value;
-//   // console.log('load image', img.src);
-//   // img.onload = function() {
-//   //   console.log('image loaded');
-//   //   context.drawImage(img, 200, 200);
-//   //   console.log(canvas.toDataURL('image/jpeg'));
-//   // }
-// })
-// // clientX
-// // clientY
-// // offsetX
-// // offsetY
-// // detail(mouse click in short amount of time)
-// // target
-// // currentTarget
-// // eventPhase(0:'none',1:'capturing',3:'propagating')
-
+    function isNotInToolsPannel(target){
+      return true;
+    }
 })();
 
 },{}]},{},[1]);

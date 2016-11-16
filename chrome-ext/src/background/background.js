@@ -33,6 +33,7 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
+
 var state = {
   recording: false,
   tabId: undefined //we starts with single tab recording design
@@ -40,7 +41,9 @@ var state = {
 var recorded = {
   steps:[]
 };
+chrome.browserAction.setBadgeText({'text':''});
 
+var recordStartTime;
 var contentScriptInit = function(request, sender, sendResponse) {
   var type = '';
   //Uponn init, check if the tab is the one we want to continue recording
@@ -48,6 +51,7 @@ var contentScriptInit = function(request, sender, sendResponse) {
     type = 'continue-recording';
     chrome.browserAction.setBadgeText({'text':'recording'});
     chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
+    recordStartTime = (new Date()).getTime();
   }else{
     type = 'initialized';
   }
@@ -71,19 +75,61 @@ var startRecording = function(request, sender, sendResponse) {
   });
 };
 
+var lastRecoredStepTime;
 var recordStep = function(request, sender, sendResponse) {
   var command = request.data;
-  var step;
+  var step, waitFor;
+  if(recorded.steps.length === 0){
+    lastRecoredStepTime = recordStartTime
+  }
+  commandTime = command.time || (new Date()).getTime();
+  waitBefore = commandTime - lastRecoredStepTime;
+  console.log('waitBefore', waitBefore);
+  lastRecoredStepTime = commandTime;
   if(command.cmd === 'sendKeys'){
-    if(recorded.steps.length == 0 || recorded.steps[-1].type !== 'sendKeys'){
+    if(recorded.steps.length === 0 || 
+      (recorded.steps[recorded.steps.length-1] && recorded.steps[recorded.steps.length-1].type !== 'sendKeys') ||
+      (recorded.steps[recorded.steps.length-1].start_url !== sender.url) ||
+      (recorded.steps[recorded.steps.length-1].keys.substr(0,7) == '!@Keys.') ||
+      (command.data.keys.substr(0,7) == '!@Keys.')
+      ){
       step = {
+        wait_before: waitBefore,
+        start_url: sender.url,
+        type: 'sendKeys',
         keys: command.data.keys,
-      }
+      };
+      recorded.steps.push(step);
     }
     else{
-      recorded.steps[-1].keys += command.data.keys
+      recorded.steps[recorded.steps.length-1].keys += command.data.keys
+    }
+  }else if(command.cmd.toLowerCase() == 'mousedown'){
+    step = {
+      wait_before: waitBefore,
+      start_url: sender.url,
+      type: 'mousedown',
+      target: {
+        tag: command.data.tag,
+        id: command.data.id,
+        class_name: command.data.class_name,
+        text: command.data.text,
+        xpath: command.data.path
+      }
+    };
+    recorded.steps.push(step);
+  }else if(command.cmd.toLowerCase() == 'mouseup'){
+    lastCommand = recorded.steps[recorded.steps.length-1];
+    if(waitBefore < 500 && 
+      lastCommand && 
+      lastCommand.type == 'mousedown' &&
+      (lastCommand.target.id == command.data.id || 
+      lastCommand.target.path == command.data.path)){
+      
+      recorded.steps[recorded.steps.length-1].type = 'click';
     }
   }
+  console.log(recorded.steps[recorded.steps.length-1]);
 };
 
 var finishRecording = function(request, sender, sendResponse) {
