@@ -143,6 +143,22 @@ var recordStep = function(request, sender, sendResponse) {
       }
     };
     recorded.steps.push(step);
+  }else if(command.cmd.toLowerCase() == 'filechange'){
+    //file change, file upload is not supported
+    // step = {
+    //   wait_before: waitBefore,
+    //   start_url: sender.url,
+    //   type: 'file_change',
+    //   target: {
+    //     tag: command.data.tag,
+    //     id: command.data.id,
+    //     class_name: command.data.class_name,
+    //     text: command.data.text,
+    //     xpath: command.data.path,
+    //     value: command.data.value
+    //   }
+    // };
+    // recorded.steps.push(step);
   }
   console.log(recorded.steps[recorded.steps.length-1]);
 };

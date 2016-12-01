@@ -295,23 +295,33 @@
       }
     }, true);
 
+    // var inputs = document.getElementsByTagName('input');
+    // console.log(inputs);
+    // for(var i=inputs.length; i--;){
+    //   inputs[i].addEventListener('change', function(e) {
+    //     console.log('change!!', e);
+    //   });
+    // }
+
     document.addEventListener('change', function(event){
       var target = event.target;
-      console.log('change event', target, isRecording, isFileInput(target), target.tagName, isDomVisible(target));
+      console.log('change event', target, isRecording, isFileInput(target), isDomVisible(target), getDomPath(target));
       if(isRecording){
         if(isFileInput(target)){
           var path = getDomPath(target);
           var filepath = target.value || '';
           var match = filepath.match(/[^\\\/]+$/);
+          console.log(target.value, filepath, match);
           if(path !== null && match !== null){
             // GlobalEvents.emit('showDomPath', path);
-            saveCommand('uploadFile', {
+            saveCommand('fileChange', {
               path: path,
               filename: match[0],
               tag: target.tagName,
               id: target.id,
               class_name: target.className,
-              text: getTargetText(target)
+              text: getTargetText(target),
+              value: match[0] || target.value
             });
           }
         }
