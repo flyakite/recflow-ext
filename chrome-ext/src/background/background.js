@@ -4,6 +4,8 @@
 //     "sample_setting": "This is how you use Store.js to remember values"
 // });
 
+var SERVER_FULL_PATH = 'http://console.recflow.com';
+
 if (!chrome.runtime) {
     // Chrome 20-21
     chrome.runtime = chrome.extension;
@@ -21,7 +23,9 @@ if (!chrome.runtime) {
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     console.log('sender', sender, 'request', request);
-    if(request.type == 'content-script-init'){
+    if(request.type == 'browser-action-init'){
+      browserActionInit(request, sender, sendResponse);
+    }else if(request.type == 'content-script-init'){
       contentScriptInit(request, sender, sendResponse);
     }else if(request.type == 'start-recording'){
       startRecording(request, sender, sendResponse);
@@ -39,9 +43,15 @@ var state = {
   tabId: undefined //we starts with single tab recording design
 };
 var recorded = {
-  steps:[]
+  start_url:'',
+  actions:[]
 };
 chrome.browserAction.setBadgeText({'text':''});
+
+
+var browserActionInit = function(request, sender, sendResponse) {
+  sendResponse({state:state})
+};
 
 var recordStartTime;
 var contentScriptInit = function(request, sender, sendResponse) {
@@ -49,7 +59,7 @@ var contentScriptInit = function(request, sender, sendResponse) {
   //Uponn init, check if the tab is the one we want to continue recording
   if(state.recording && state.tabId && state.tabId === sender.tab.id){
     type = 'continue-recording';
-    chrome.browserAction.setBadgeText({'text':'recording'});
+    chrome.browserAction.setBadgeText({'text':'Record'});
     chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
     recordStartTime = (new Date()).getTime();
   }else{
@@ -79,7 +89,7 @@ var lastRecoredStepTime;
 var recordStep = function(request, sender, sendResponse) {
   var command = request.data;
   var step, waitFor;
-  if(recorded.steps.length === 0){
+  if(recorded.actions.length === 0){
     lastRecoredStepTime = recordStartTime
   }
   commandTime = command.time || (new Date()).getTime();
@@ -87,10 +97,10 @@ var recordStep = function(request, sender, sendResponse) {
   console.log('waitBefore', waitBefore);
   lastRecoredStepTime = commandTime;
   if(command.cmd === 'sendKeys'){
-    if(recorded.steps.length === 0 || 
-      (recorded.steps[recorded.steps.length-1] && recorded.steps[recorded.steps.length-1].type !== 'sendKeys') ||
-      (recorded.steps[recorded.steps.length-1].start_url !== sender.url) ||
-      (recorded.steps[recorded.steps.length-1].keys.substr(0,7) == '!@Keys.') ||
+    if(recorded.actions.length === 0 || 
+      (recorded.actions[recorded.actions.length-1] && recorded.actions[recorded.actions.length-1].type !== 'sendKeys') ||
+      (recorded.actions[recorded.actions.length-1].start_url !== sender.url) ||
+      (recorded.actions[recorded.actions.length-1].keys.substr(0,7) == '!@Keys.') ||
       (command.data.keys.substr(0,7) == '!@Keys.')
       ){
       step = {
@@ -99,10 +109,10 @@ var recordStep = function(request, sender, sendResponse) {
         type: 'sendKeys',
         keys: command.data.keys,
       };
-      recorded.steps.push(step);
+      recorded.actions.push(step);
     }
     else{
-      recorded.steps[recorded.steps.length-1].keys += command.data.keys
+      recorded.actions[recorded.actions.length-1].keys += command.data.keys
     }
   }else if(command.cmd.toLowerCase() == 'mousedown'){
     step = {
@@ -117,16 +127,16 @@ var recordStep = function(request, sender, sendResponse) {
         xpath: command.data.path
       }
     };
-    recorded.steps.push(step);
+    recorded.actions.push(step);
   }else if(command.cmd.toLowerCase() == 'mouseup'){
-    lastCommand = recorded.steps[recorded.steps.length-1];
+    lastCommand = recorded.actions[recorded.actions.length-1];
     if(waitBefore < 500 && 
       lastCommand && 
       lastCommand.type == 'mousedown' &&
       (lastCommand.target.id == command.data.id || 
       lastCommand.target.path == command.data.path)){
       
-      recorded.steps[recorded.steps.length-1].type = 'click';
+      recorded.actions[recorded.actions.length-1].type = 'click';
     }
   }else if(command.cmd.toLowerCase() == 'select'){
     step = {
@@ -142,7 +152,7 @@ var recordStep = function(request, sender, sendResponse) {
         value: command.data.value
       }
     };
-    recorded.steps.push(step);
+    recorded.actions.push(step);
   }else if(command.cmd.toLowerCase() == 'filechange'){
     //file change, file upload is not supported
     // step = {
@@ -158,12 +168,15 @@ var recordStep = function(request, sender, sendResponse) {
     //     value: command.data.value
     //   }
     // };
-    // recorded.steps.push(step);
+    // recorded.actions.push(step);
   }
-  console.log(recorded.steps[recorded.steps.length-1]);
+  console.log(recorded.actions[recorded.actions.length-1]);
 };
 
 var finishRecording = function(request, sender, sendResponse) {
+  console.log('finishRecording');
+  console.log(recorded);
+  recorded.start_url = recorded.actions[0].start_url;
   state.recording = false;
   chrome.browserAction.setBadgeText({'text':''});
   if(state.tabId){
@@ -173,4 +186,37 @@ var finishRecording = function(request, sender, sendResponse) {
   }
   state.tabId = undefined;
   //post to server
+  var url = SERVER_FULL_PATH + '/api/test-scenario';
+  postToServer(url, {
+    'record': JSON.stringify(recorded)
+  }, function(response) {
+    console.log(response.status);
+    if(response.status == 200){
+      console.log(response.data);
+      var data = JSON.parse(response.data);
+      var sid = data['test-scenario'].sid;
+      window.open(SERVER_FULL_PATH + '/prototype/record-test-case?sid=' + sid);
+    }
+  });
+  recorded.start_url = '';
+  recorded.actions = [];
 };
+
+var postToServer = function(url, params, callback) {
+  var xhr = new XMLHttpRequest();
+  var params_string = '';
+  for(var k in params){
+    if(params_string != "") params_string += "&";
+    params_string += k + "=" + encodeURIComponent(params[k]);
+  }
+  console.log('posting to ' + url);
+  console.log(params_string);
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  xhr.onreadystatechange = function() {//Call a function when the state changes.
+    if(xhr.readyState == 4) {
+      callback({status:xhr.status, data:xhr.responseText});
+    }
+  };
+  xhr.send(params_string);
+}

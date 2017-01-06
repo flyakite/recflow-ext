@@ -24,11 +24,9 @@
   }
 
   chrome.runtime.sendMessage({'type':'content-script-init'}, function(response) {
-    console.log('response', response);
     var readyStateCheckInterval = setInterval(function() {
       if (document.readyState === "complete") {
         clearInterval(readyStateCheckInterval);
-        console.log(response);
         init({backgroundResponse:response});
     	}
   	}, 10);
@@ -37,11 +35,12 @@
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     console.log('request', request);
     if(request.type == 'finish-recording'){
+      console.log('receive finish-recording');
     }
   });
 
   var init = function(settings) {
-    console.log('init');
+    console.log('init recflow');
     if(settings && settings.backgroundResponse){
       if(settings.backgroundResponse.type === 'continue-recording'){
         startRecording();

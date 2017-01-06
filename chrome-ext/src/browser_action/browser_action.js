@@ -9,6 +9,16 @@ if (!chrome.runtime) {
     chrome.runtime.connect = chrome.extension.connect;
 }
 
+//init
+chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
+  console.log(response);
+  if(response.state.recording){
+    recordBtn.style = "display:none";
+  }else{
+    finishBtn.style = "display:none";
+  }
+});
+
 var recordBtn = document.getElementById('record-btn');
 var finishBtn = document.getElementById('finish-btn');
 recordBtn.innerHTML = chrome.i18n.getMessage('recordBtnText');
@@ -18,7 +28,8 @@ recordBtn.addEventListener('click', function() {
   chrome.runtime.sendMessage({'type':'start-recording'}, function(response) {
     console.log('sendMessage');
     console.log(response);
-  })
+
+  });
   window.close();
 });
 
