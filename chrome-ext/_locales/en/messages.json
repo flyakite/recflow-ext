@@ -1,10 +1,22 @@
 {
-  "recordBtnText": {
+  "mDescription": {
+    "message": "Test your website on real mobile devices.",
+    "description":""
+  },
+  "recordIntroduction": {
+    "message": "Press Enter Recording Mode to start recording mouse clicks and form inputs. File upload is not supported now.",
+    "description":""
+  },
+  "authenticationWarning": {
+    "message": "If it requires an authentication to access the page, please start to record from logging in.",
+    "description":""
+  },
+  "recordBtn": {
     "message":"Enter Recording Mode",
     "description":""
   },
-  "finishBtnText": {
-    "message":"Finish This Test Case",
+  "finishBtn": {
+    "message":"Finish Recording",
     "description":""
   }
 }

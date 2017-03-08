@@ -1,0 +1,22 @@
+{
+  "mDescription": {
+    "message": "在多個實體手機、平板裝置上測試您的網站。",
+    "description":""
+  },
+  "recordIntroduction": {
+    "message": "按下按鈕進入錄製模式，錄製模式會紀錄您如何操作當前的網頁，目前支援錄製滑鼠點擊、表單輸入等事件，目前不支援文件上傳。",
+    "description":""
+  },
+  "authenticationWarning": {
+    "message": "如果當前頁面需要特殊權限才看的到，請從登入開始錄製。",
+    "description":""
+  },
+  "recordBtn": {
+    "message":"進入錄製模式",
+    "description":""
+  },
+  "finishBtn": {
+    "message":"結束錄製",
+    "description":""
+  }
+}

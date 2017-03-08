@@ -9,6 +9,9 @@ if (!chrome.runtime) {
     chrome.runtime.connect = chrome.extension.connect;
 }
 
+var recordBtn = document.getElementById('recordBtn');
+var finishBtn = document.getElementById('finishBtn');
+
 //init
 chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
   console.log(response);
@@ -19,10 +22,6 @@ chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
   }
 });
 
-var recordBtn = document.getElementById('record-btn');
-var finishBtn = document.getElementById('finish-btn');
-recordBtn.innerHTML = chrome.i18n.getMessage('recordBtnText');
-finishBtn.innerHTML = chrome.i18n.getMessage('finishBtnText');
 
 recordBtn.addEventListener('click', function() {
   chrome.runtime.sendMessage({'type':'start-recording'}, function(response) {
@@ -40,3 +39,14 @@ finishBtn.addEventListener('click', function() {
   })
   window.close();
 });
+
+
+var i18n_init = function(){
+  document.getElementById('recordBtn').innerHTML = chrome.i18n.getMessage('recordBtn');
+  document.getElementById('finishBtn').innerHTML = chrome.i18n.getMessage('finishBtn');
+  document.getElementById('authenticationWarning').innerHTML = chrome.i18n.getMessage('authenticationWarning');
+  document.getElementById('recordIntroduction').innerHTML = chrome.i18n.getMessage('recordIntroduction');
+  
+  // chrome.i18n.getMessage()
+};
+i18n_init();

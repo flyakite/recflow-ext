@@ -37,10 +37,18 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
+var MOBILE_INFO = {
+  iphonex:{
+    width: 320,
+    height: 568,
+    ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1"
+  }
+};
 
 var state = {
   recording: false,
-  tabId: undefined //we starts with single tab recording design
+  tabId: undefined, //we starts with single tab recording design
+  origWindowSize: undefined
 };
 var recorded = {
   start_url:'',
@@ -83,6 +91,8 @@ var startRecording = function(request, sender, sendResponse) {
     //   console.log('responseOfStartRecording', response);
     // });
   });
+  saveWindowSize();
+  setMobileWindowSize(MOBILE_INFO.iphonex);
 };
 
 var lastRecoredStepTime;
@@ -107,7 +117,14 @@ var recordStep = function(request, sender, sendResponse) {
         wait_before: waitBefore,
         start_url: sender.url,
         type: 'sendKeys',
-        keys: command.data.keys,
+        value: command.data.keys,
+        target: {
+          tag: command.data.tag,
+          id: command.data.id,
+          class_name: command.data.class_name,
+          text: command.data.text,
+          xpath: command.data.path
+        }
       };
       recorded.actions.push(step);
     }
@@ -143,13 +160,13 @@ var recordStep = function(request, sender, sendResponse) {
       wait_before: waitBefore,
       start_url: sender.url,
       type: 'select',
+      value: command.data.value,
       target: {
         tag: command.data.tag,
         id: command.data.id,
         class_name: command.data.class_name,
         text: command.data.text,
         xpath: command.data.path,
-        value: command.data.value
       }
     };
     recorded.actions.push(step);
@@ -176,6 +193,7 @@ var recordStep = function(request, sender, sendResponse) {
 var finishRecording = function(request, sender, sendResponse) {
   console.log('finishRecording');
   console.log(recorded);
+  //TODO: if no recorded actions
   recorded.start_url = recorded.actions[0].start_url;
   state.recording = false;
   chrome.browserAction.setBadgeText({'text':''});
@@ -194,12 +212,21 @@ var finishRecording = function(request, sender, sendResponse) {
     if(response.status == 200){
       console.log(response.data);
       var data = JSON.parse(response.data);
-      var sid = data['test-scenario'].sid;
-      window.open(SERVER_FULL_PATH + '/prototype/record-test-case?sid=' + sid);
+      if(data['test-scenario']){
+        var sid = data['test-scenario'].sid;
+        window.open(SERVER_FULL_PATH + '/prototype/record-test-case?sid=' + sid);
+      }else{
+        console.error('no test scenario');
+        //TODO
+      }
+    }else{
+      console.error(response);
+      //TODO
     }
   });
   recorded.start_url = '';
   recorded.actions = [];
+  restoreWindowSize();
 };
 
 var postToServer = function(url, params, callback) {
@@ -219,4 +246,61 @@ var postToServer = function(url, params, callback) {
     }
   };
   xhr.send(params_string);
-}
+};
+
+
+//when recording, change User Agent
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  function(details) {
+    if(state.recording){
+      var userAgentString = MOBILE_INFO.iphonex.ua;
+      for (var i = 0; i < details.requestHeaders.length; ++i) {
+        if (details.requestHeaders[i].name === 'User-Agent') {
+          // console.log(details.requestHeaders[i])
+          details.requestHeaders[i].value = userAgentString;
+          // console.log(details.requestHeaders[i].value);
+          break;
+        }
+      }
+    }
+    return {requestHeaders: details.requestHeaders};
+  },
+  {urls: ["<all_urls>"]},
+  ["requestHeaders"]);
+
+var saveWindowSize = function(){
+  chrome.windows.getLastFocused({populate: false}, //getCurrent
+    function(currentWindow){ 
+      state.origWindowSize = {
+        left: currentWindow.left,
+        top: currentWindow.top,
+        width: currentWindow.width,
+        height: currentWindow.height
+      };
+    });
+};
+
+var restoreWindowSize = function(){
+  chrome.windows.getLastFocused({populate: false}, //getCurrent
+    function(currentWindow){ 
+      chrome.windows.update(currentWindow.id, state.origWindowSize);
+    });
+};
+var setWindowSize = function(left, top, width, height) {
+  chrome.windows.getLastFocused({populate: false}, //getCurrent
+    function(currentWindow){ 
+      chrome.windows.update(currentWindow.id, {
+        left:left,
+        top:top,
+        width:width,
+        height:height
+      });
+    });
+};
+var setMobileWindowSize = function(device){
+  var maxWidth = window.screen.availWidth;
+  var maxHeight = window.screen.availHeight;
+  var left = Math.round((maxWidth - device.width)/2);
+  var top = 0; //Math.round((maxHeight - device.height)/2);
+  setWindowSize(left, top, device.width, device.height);
+};

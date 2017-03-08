@@ -178,6 +178,7 @@
         var keyCode = event.keyCode;
         var modifierKey = modifierKeys[keyCode];
         var NonTextKey = NonTextKeys[keyCode];
+        var path = getDomPath(target);
         if(isRecording){
           var stickModifierKey;
           if(event.ctrlKey){
@@ -209,7 +210,12 @@
               });
             }
             saveCommand('sendKeys', {
-              keys: '!@Keys.'+NonTextKey
+              keys: '!@Keys.'+NonTextKey,
+              path: path,
+              tag: target.tagName,
+              id: target.id,
+              class_name: target.className,
+              text: getTargetText(target)
             });
           }
           else if(stickModifierKey === 'CTRL'){
@@ -266,8 +272,14 @@
         if(isRecording){
           var typedCharacter = String.fromCharCode(event.keyCode);
           if(typedCharacter !== '' && /[\r\n]/.test(typedCharacter) === false){
+            var path = getDomPath(target);
             saveCommand('sendKeys', {
-              keys: typedCharacter
+              keys: typedCharacter,
+              path: path,
+              tag: target.tagName,
+              id: target.id,
+              class_name: target.className,
+              text: getTargetText(target)
             });
           }
         }
@@ -282,8 +294,14 @@
       var target = event.target;
       if(isNotInToolsPannel(target)){
         if(isRecording){
+          var path = getDomPath(target);
           saveCommand('sendKeys', {
-            keys:event.data
+            keys:event.data,
+            path: path,
+            tag: target.tagName,
+            id: target.id,
+            class_name: target.className,
+            text: getTargetText(target)
           });
         }
         else if(isStopEvent){

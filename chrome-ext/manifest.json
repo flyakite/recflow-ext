@@ -2,14 +2,14 @@
   "name": "Recflow",
   "version": "0.0.1",
   "manifest_version": 2,
-  "description": "Test your website on real mobile devices.",
+  "description": "__MSG_mDescription__",
   "homepage_url": "http://www.recflow.com",
   "icons": {
     "16": "icons/recflow_icon_16x16.png",
     "48": "icons/recflow_icon_128x128.png",
     "128": "icons/recflow_icon_128x128.png"
   },
-  "default_locale": "en",
+  "default_locale": "zh_TW",
   "background": {
     "scripts": [
       "src/background/background.js"
@@ -22,7 +22,9 @@
     "default_popup": "src/browser_action/browser_action.html"
   },
   "permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "webRequest",
+    "tabs"
   ],
   "content_scripts": [
     {

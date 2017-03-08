@@ -4,7 +4,7 @@
 	#mainPopup {
 		padding: 10px;
 		height: 200px;
-		width: 400px;
+		width: 300px;
 		font-family: Helvetica, Ubuntu, Arial, sans-serif;
 	}
 	h1 {
@@ -24,20 +24,20 @@
     width: 190px;
     display: table;
   }
-  #record-btn {
+  #recordBtn {
     /*float: left;*/
-    width: 400px;
+    width: 300px;
     color: white;
     background-color: #e74c3c;
   }
-  #assert-btn {
+  #assertBtn {
     float: right;
     color: white;
     background-color: #2ecc71;
   }
-  #finish-btn {
+  #finishBtn {
     margin-top: 20px;
-    width: 400px;
+    width: 300px;
     color: white;
     background-color: #34495e;
   }
@@ -47,15 +47,21 @@
 <div id="mainPopup">
   <h2>RecFlow</h2>
   <div>
+    <p id="recordIntroduction">
+      Press Enter Recording Mode to start recording mouse clicks and form inputs. File upload is not supported now.
+    </p>
+    <p id="authenticationWarning">
+      If it requires an authentication to access the page, please start to record from logging in.
+    </p>
     <div>
-      <button id="record-btn" class="btn record-btn">
-        Start Recording Actions
+      <button id="recordBtn" class="btn record-btn">
+        Enter Recording Mode
       </button>
       <!--button id="assert-btn" class="btn mode-btn">
         Enter Assertion Mode
       </button-->
     </div>
-    <button id="finish-btn" class="btn finish-btn">
+    <button id="finishBtn" class="btn finish-btn">
       Finish Recording
     </button>
   </div>
