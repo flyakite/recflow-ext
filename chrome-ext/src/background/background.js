@@ -33,14 +33,18 @@ chrome.runtime.onMessage.addListener(
       recordStep(request, sender, sendResponse);
     }else if(request.type == 'finish-recording'){
       finishRecording(request, sender, sendResponse);
+    }else if(request.type == 'cancel-recording'){
+      cancelRecording(request, sender, sendResponse);
+    }else{
+      console.log('unknown request.type:' + request.type);
     }
   }
 );
 
 var MOBILE_INFO = {
   iphonex:{
-    width: 320,
-    height: 568,
+    width: 375,
+    height: 667,
     ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1"
   }
 };
@@ -190,6 +194,19 @@ var recordStep = function(request, sender, sendResponse) {
   console.log(recorded.actions[recorded.actions.length-1]);
 };
 
+var cancelRecording = function(request, sender, sendResponse) {
+  console.log('cancelRecording');
+  chrome.browserAction.setBadgeText({'text':''});
+  if(state.tabId){
+    chrome.tabs.sendMessage(state.tabId, {type:'cancel-recording', state:state}, function(response) {
+      console.log('responseOfCancelRecording', response);
+    });
+  }
+  state.tabId = undefined;
+  recorded.start_url = '';
+  recorded.actions = [];
+  restoreWindowSize();
+};
 var finishRecording = function(request, sender, sendResponse) {
   console.log('finishRecording');
   console.log(recorded);

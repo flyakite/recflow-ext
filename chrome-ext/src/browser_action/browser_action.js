@@ -11,6 +11,7 @@ if (!chrome.runtime) {
 
 var recordBtn = document.getElementById('recordBtn');
 var finishBtn = document.getElementById('finishBtn');
+var cancelBtn = document.getElementById('cancelBtn');
 
 //init
 chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
@@ -19,6 +20,7 @@ chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
     recordBtn.style = "display:none";
   }else{
     finishBtn.style = "display:none";
+    cancelBtn.style = "display:none";
   }
 });
 
@@ -40,10 +42,18 @@ finishBtn.addEventListener('click', function() {
   window.close();
 });
 
+cancelBtn.addEventListener('click', function(){
+  chrome.runtime.sendMessage({'type':'cancel-recording'}, function(response) {
+    console.log('sendMessage');
+    console.log(response);
+  })
+  window.close();
+})
 
 var i18n_init = function(){
   document.getElementById('recordBtn').innerHTML = chrome.i18n.getMessage('recordBtn');
   document.getElementById('finishBtn').innerHTML = chrome.i18n.getMessage('finishBtn');
+  document.getElementById('cancelBtn').innerHTML = chrome.i18n.getMessage('cancelBtn');
   document.getElementById('authenticationWarning').innerHTML = chrome.i18n.getMessage('authenticationWarning');
   document.getElementById('recordIntroduction').innerHTML = chrome.i18n.getMessage('recordIntroduction');
   
