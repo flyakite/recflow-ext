@@ -11,7 +11,7 @@
   },
   "default_locale": "zh_TW",
   "background": {
-    "scripts": [
+    "scripts":[
       "src/background/background.js"
     ],
     "persistent": true

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body{
+  margin: 0;
+  padding: 0;
+}
+.full-size{
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+.status-bar{
+  font-size: 20px;
+  line-height: 50px;
+  height: 50px;
+  color: #444;
+  background: white;
+}
+.btn{
+  font-size: 20px;
+  line-height: 50px;
+  height: 50px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-radius: 3px;
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+  border: 0;
+  cursor: pointer;
+}
+.btn-red{
+  color: white;
+  background: #f25522;
+  box-shadow: 0 3px 0 0 #9f2f09;
+}
+.btn-red:hover{
+  color: white;
+  background: #ff8855;
+  box-shadow: 0 3px 0 0 #d2523c;
+}
+.btn-purple{
+  color: white;
+  background: #354a5f;
+  box-shadow: 0 3px 0 0 #02172c;
+}
+.btn-purple:hover{
+  color: white;
+  background: #687d92;
+  box-shadow: 0 3px 0 0 #354a5f;
+}
+.btn-purple:disabled{
+  color: white;
+  background: #eee;
+  box-shadow: 0 3px 0 0 #eee;
+  cursor: no-drop;
+}
+.btn-section{
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+.steps-section{
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+  <div id="status-bar" class="status-bar full-size">Recording</div>
+  <div class="btn-section">
+    <button id="finish-recording" class="finish-recording btn btn-purple" disabled>Finish Recording</button>
+  </div>
+  <div id="steps-section" class="steps-section"></div>
+  <script src="./panel.js"></script>
+</body>
+</html>
