@@ -519,7 +519,7 @@
     text = text.replace(/^\s+|\s+$/g, '');
     var textLen = byteLen(text);
     if(textLen <= 60){
-      text = textLen > 20 ? leftstr(text, 20) + '...' : text;
+      text = textLen > 30 ? leftstr(text, 30) + '...' : text;
     }
     else{
       text = '';

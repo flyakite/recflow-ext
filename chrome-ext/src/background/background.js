@@ -72,7 +72,7 @@ var browserActionInit = function(request, sender, sendResponse) {
 
 var panelInit = function(request, sender, sendResponse) {
   state.panelTabID = sender.tab.id;
-  sendResponse({state:state});
+  sendResponse({state:state, steps:recorded.actions});
 };
 
 var recordStartTime;

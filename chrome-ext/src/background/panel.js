@@ -2,7 +2,7 @@ chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     console.log('sender', sender, 'request', request);
     if(request.type == 'steps'){
-      showSteps(request, sender, sendResponse);
+      showSteps(request.steps, {request:request, sender:sender, sendResponse:sendResponse});
     }
   }
 );
@@ -24,8 +24,13 @@ var init = function(settings) {
     var state = settings.backgroundResponse.state;
     if(state.recording){
       document.getElementById('status-bar').innerHTML = 'Recording';
+      document.getElementById('status-helper').className = '';
     }else{
       document.getElementById('status-bar').innerHTML = 'Idle';
+    }
+    var steps = settings.backgroundResponse.steps;
+    if(steps && steps.length != 0){
+      showSteps(steps);
     }
   }
 };
@@ -66,19 +71,19 @@ var stepValueToText = function(value){
 
 var stepToHTML = function(step){
   return "<div class='step'>" + 
-   "<div class='start-url'>" + step.start_url + "</div>" +
+   "<div class='wait-before'> wait for " + 0.001 * parseInt(step.wait_before, 10) + " seconds </div>" +
    "<div class='step-main'>" +
    "<span class='step-type'>" + stepTypeText[step.type] + "</span>" +
    "<span class='step-value'>" + stepValueToText(step.value) + "</span>" +
    "<span class='step-target'>" + stepTargetToText(step.target) + "</span>" +
+   "<div class='start-url'>" + step.start_url + "</div>" +
    "</div>" +
    "</div>";
 };
 
-var showSteps = function(request, sender, sendResponse){
-  console.log('showSteps', request);
+var showSteps = function(steps, options){
+  console.log('showSteps', options);
   var stepsHTML = '';
-  var steps = request.steps;
   for(var i=0; i<steps.length; i++){
     stepsHTML += stepToHTML(steps[i]);
   }
