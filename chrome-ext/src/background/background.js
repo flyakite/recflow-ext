@@ -113,6 +113,7 @@ var startRecording = function(request, sender, sendResponse) {
 
 var lastRecoredStepTime;
 var recordStep = function(request, sender, sendResponse) {
+  console.log('recordStep');
   var command = request.data;
   var step, waitFor;
   if(recorded.actions.length === 0){
@@ -121,6 +122,7 @@ var recordStep = function(request, sender, sendResponse) {
   commandTime = command.time || (new Date()).getTime();
   waitBefore = commandTime - lastRecoredStepTime;
   console.log('waitBefore', waitBefore);
+  console.log('command.cmd', command.cmd);
   lastRecoredStepTime = commandTime;
   if(command.cmd === 'sendKeys'){
     if(recorded.actions.length === 0 || 
@@ -224,6 +226,8 @@ var cancelRecording = function(request, sender, sendResponse) {
 var finishRecording = function(request, sender, sendResponse) {
   console.log('finishRecording');
   console.log(recorded);
+  console.log(request);
+  recorded.actions = request.steps;
   //TODO: if no recorded actions
   recorded.start_url = recorded.actions[0].start_url;
   state.recording = false;
@@ -254,7 +258,7 @@ var finishRecording = function(request, sender, sendResponse) {
       }
     }else{
       console.error(response);
-      //TODO
+      //TODO: show error message on panel
     }
   });
   recorded.start_url = '';

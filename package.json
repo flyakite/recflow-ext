@@ -19,7 +19,9 @@
     "url": "https://github.com/flyakite/recflow-ext/issues"
   },
   "homepage": "https://github.com/flyakite/recflow-ext#readme",
-  "dependencies": {},
+  "dependencies": {
+    "vue": "^1.0.28-csp"
+  },
   "devDependencies": {
     "gulp": "^3.9.1",
     "gulp-bro": "^0.3.1"

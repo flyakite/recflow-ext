@@ -58,6 +58,16 @@ body{
   box-shadow: 0 3px 0 0 #eee;
   cursor: no-drop;
 }
+.btn-light-purple{
+  color: white;
+  background: #687d92;
+  box-shadow: 0 3px 0 0 #354a5f;
+}
+.btn-light-purple:hover{
+  color: white;
+  background: #8297AC;
+  box-shadow: 0 3px 0 0 #687d92;
+}
 .btn-section{
   width: 100%;
   margin: 30px auto;
@@ -66,9 +76,9 @@ body{
 .steps-section{
   margin-top: 10px;
 }
-.invisible{
+/*.invisible{
   visibility: hidden;
-}
+}*/
 #status-helper{
   color: #444;
   /*line-height: 30px;*/
@@ -87,6 +97,7 @@ body{
   background: #eee;
   /*border-top: 1px solid #fefefe;*/
   border-bottom: 1px solid #ddd;
+  position: relative;
 }
 .wait-before{
   color: #777;
@@ -97,19 +108,50 @@ body{
 .step-type{
   padding-right: 5px;
 }
+.remove-step{
+  position: absolute;
+  top: 5px;
+  right: 30px;
+  color: #aaa;
+  font-weight: 800;
+  cursor: pointer;
+}
+.remove-step:hover{
+  color: #ccc;
+}
 
 </style>
 </head>
 <body>
-  <div id="status-bar" class="status-bar full-size">
-    <span id="status-bar-action">Recording</span>
-    <span id="status-bar-web"></span>
+  <div id="panel-app" class="app">
+    <div id="status-bar" class="status-bar full-size">
+      <span id="status-bar-action">{{statusAction}}</span>
+      <!--span id="status-bar-web"></span-->
+    </div>
+    <div id="status-helper" v-show="!steps.length">Please show us how to test your website in the browser, we are recording your actions.</div>
+    <div id="steps-section" class="steps-section">
+      <div class='step' v-for="step in steps">
+        <div class="remove-step" v-show="recordingFinished" @click="removeStep(step)">X</div> 
+        <div class='wait-before'> 
+          wait for 
+          <span v-show="!recordingFinished">{{step.wait_before_seconds}}</span>
+          <input type="text" v-show="recordingFinished" v-model="step.wait_before_seconds"> 
+          seconds 
+        </div>
+        <div class='step-main'>
+          <span class='step-type'> {{ step.type | stepTypeToText }} </span>
+          <span class='step-value'> {{ step.value | stepValueToText }} </span>
+          <span class='step-target'> {{ step.target | stepTargetToText }} </span>
+          <div class='start-url'> {{ step.start_url }} </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-section">
+      <button id="finish-recording" class="finish-recording btn btn-purple" v-show="!recordingFinished" :disabled="!steps.length" @click="finishRecording">Finish Recording</button>
+      <button id="finish-editing" class="finish-editing btn btn-light-purple" v-show="recordingFinished" @click="finishEditing">Finish Editing</button>
+    </div>
   </div>
-  <div id="status-helper" class="invisible">Please show us how to use your website for testing, we are recording your actions. ---></div>
-  <div id="steps-section" class="steps-section"></div>
-  <div class="btn-section">
-    <button id="finish-recording" class="finish-recording btn btn-purple" disabled>Finish Recording</button>
-  </div>
+  <script src="./vue.min.js"></script>
   <script src="./panel.js"></script>
 </body>
 </html>
