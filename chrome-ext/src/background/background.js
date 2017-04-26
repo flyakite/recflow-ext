@@ -164,14 +164,29 @@ var recordStep = function(request, sender, sendResponse) {
     };
     recorded.actions.push(step);
   }else if(command.cmd.toLowerCase() == 'mouseup'){
-    step = recorded.actions[recorded.actions.length-1];
+    var lastStep = recorded.actions[recorded.actions.length-1];
     if(waitBefore < 500 && 
-      step && 
-      step.type == 'mousedown' &&
-      (step.target.id == command.data.id || 
-      step.target.path == command.data.path)){
-      
+      lastStep && 
+      lastStep.type == 'mousedown' &&
+      (lastStep.target.id == command.data.id || 
+      lastStep.target.path == command.data.path)){
+      //change last step action into click
       recorded.actions[recorded.actions.length-1].type = 'click';
+    }else{
+      // new mouseup step
+      step = {
+        wait_before: waitBefore,
+        start_url: sender.url,
+        type: 'mouseup',
+        target: {
+          tag: command.data.tag,
+          id: command.data.id,
+          class_name: command.data.class_name,
+          text: command.data.text,
+          xpath: command.data.path
+        }
+      };
+      recorded.actions.push(step);
     }
   }else if(command.cmd.toLowerCase() == 'select'){
     step = {
@@ -295,7 +310,6 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         if (details.requestHeaders[i].name === 'User-Agent') {
           // console.log(details.requestHeaders[i])
           details.requestHeaders[i].value = userAgentString;
-          console.log(details.requestHeaders[i]);
           break;
         }
       }
