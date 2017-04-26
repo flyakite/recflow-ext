@@ -107,8 +107,8 @@ var startRecording = function(request, sender, sendResponse) {
     // });
   });
   saveWindowSize();
+  exitFullScreen(createPanel);
   setMobileWindowSize(MOBILE_INFO.iphonex);
-  createPanel();
 };
 
 var lastRecoredStepTime;
@@ -295,7 +295,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         if (details.requestHeaders[i].name === 'User-Agent') {
           // console.log(details.requestHeaders[i])
           details.requestHeaders[i].value = userAgentString;
-          // console.log(details.requestHeaders[i].value);
+          console.log(details.requestHeaders[i]);
           break;
         }
       }
@@ -303,10 +303,19 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     return {requestHeaders: details.requestHeaders};
   },
   {urls: ["<all_urls>"]},
-  ["requestHeaders"]);
+  ["requestHeaders","blocking"]);
+
+var exitFullScreen = function(callback){
+  chrome.windows.getCurrent(function(w){
+    chrome.windows.update(w.id, { state: "normal" });
+    if(callback && typeof callback === 'function'){
+      callback();
+    }
+  });
+};
 
 var saveWindowSize = function(){
-  chrome.windows.getLastFocused({populate: false}, //getCurrent
+  chrome.windows.getCurrent({populate: false}, //getLastFocused
     function(currentWindow){ 
       state.origWindowSize = {
         left: currentWindow.left,
@@ -350,8 +359,10 @@ var createPanel = function(){
     width: 400,
     height: window.screen.availHeight,
     focused: false,
-    // type: "popup"
+    state: "normal",
+    type: "popup"
   }, function(panelWindow){
+    // chrome.windows.update(panelWindow.id, {state:'normal'});
     state.panelWindowID = panelWindow.id;
   });
 };
