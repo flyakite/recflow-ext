@@ -9,7 +9,8 @@ if (!chrome.runtime) {
     chrome.runtime.connect = chrome.extension.connect;
 }
 
-var recordBtn = document.getElementById('recordBtn');
+var recordMobileBtn = document.getElementById('recordMobileBtn');
+var recordDesktopBtn = document.getElementById('recordDesktopBtn');
 var finishBtn = document.getElementById('finishBtn');
 var cancelBtn = document.getElementById('cancelBtn');
 
@@ -17,7 +18,8 @@ var cancelBtn = document.getElementById('cancelBtn');
 chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
   console.log(response);
   if(response.state.recording){
-    recordBtn.style = "display:none";
+    recordMobileBtn.style = "display:none";
+    recordDesktopBtn.style = "display:none";
   }else{
     finishBtn.style = "display:none";
     cancelBtn.style = "display:none";
@@ -25,11 +27,16 @@ chrome.runtime.sendMessage({'type':'browser-action-init'}, function(response) {
 });
 
 
-recordBtn.addEventListener('click', function() {
-  chrome.runtime.sendMessage({'type':'start-recording'}, function(response) {
-    console.log('sendMessage');
+recordMobileBtn.addEventListener('click', function() {
+  chrome.runtime.sendMessage({'type':'start-recording', 'deviceType':'mobile'}, function(response) {
     console.log(response);
+  });
+  window.close();
+});
 
+recordDesktopBtn.addEventListener('click', function() {
+  chrome.runtime.sendMessage({'type':'start-recording', 'deviceType':'desktop'}, function(response) {
+    console.log(response);
   });
   window.close();
 });
@@ -51,7 +58,8 @@ cancelBtn.addEventListener('click', function(){
 })
 
 var i18n_init = function(){
-  document.getElementById('recordBtn').innerHTML = chrome.i18n.getMessage('recordBtn');
+  document.getElementById('recordMobileBtn').innerHTML = chrome.i18n.getMessage('recordMobileBtn');
+  document.getElementById('recordDesktopBtn').innerHTML = chrome.i18n.getMessage('recordDesktopBtn');
   document.getElementById('finishBtn').innerHTML = chrome.i18n.getMessage('finishBtn');
   document.getElementById('cancelBtn').innerHTML = chrome.i18n.getMessage('cancelBtn');
   document.getElementById('authenticationWarning').innerHTML = chrome.i18n.getMessage('authenticationWarning');

@@ -50,11 +50,15 @@ var MOBILE_INFO = {
     ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1"
   }
 };
+var props = {
+  panelInitWidth: 400
+};
 
 var state = {
   recording: false,
   // tabId: undefined,
   recordingTabIDs: [],
+  recordingWindow: undefined,
   panelWindowID: undefined,
   panelTabID: undefined,
   origWindowSize: undefined
@@ -82,7 +86,7 @@ var contentScriptInit = function(request, sender, sendResponse) {
   // if(state.recording && state.tabId && state.tabId === sender.tab.id){
   if(state.recording){
     type = 'continue-recording';
-    chrome.browserAction.setBadgeText({'text':'Record'});
+    chrome.browserAction.setBadgeText({'text':'REC'});
     chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
     recordStartTime = (new Date()).getTime();
   }else{
@@ -106,9 +110,13 @@ var startRecording = function(request, sender, sendResponse) {
     //   console.log('responseOfStartRecording', response);
     // });
   });
-  saveWindowSize();
-  exitFullScreen(createPanel);
-  setMobileWindowSize(MOBILE_INFO.iphonex);
+  saveWindowSize()
+  .then(exitFullScreen)
+  .then(createPanel)
+  .then(function(){
+    setWindowSizeByDeviceType(request.deviceType);
+  })
+  ;
 };
 
 var lastRecoredStepTime;
@@ -319,75 +327,124 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   {urls: ["<all_urls>"]},
   ["requestHeaders","blocking"]);
 
-var exitFullScreen = function(callback){
-  chrome.windows.getCurrent(function(w){
-    chrome.windows.update(w.id, { state: "normal" });
-    if(callback && typeof callback === 'function'){
-      callback();
+var exitFullScreen = function(){
+  return new Promise(function(resolve, reject){
+    if(state.recordingWindow.state == 'fullscreen'){
+      chrome.windows.update(state.recordingWindow.id, { state: "normal" }, function(w){
+        state.recordingWindow = w;
+        return resolve();
+      });
+    }else{
+      return resolve();
     }
   });
 };
 
 var saveWindowSize = function(){
-  chrome.windows.getCurrent({populate: false}, //getLastFocused
-    function(currentWindow){ 
-      state.origWindowSize = {
-        left: currentWindow.left,
-        top: currentWindow.top,
-        width: currentWindow.width,
-        height: currentWindow.height
-      };
-    });
+  //save window and window size
+  return new Promise(function(resolve, reject){
+    chrome.windows.getCurrent({populate: false}, //getLastFocused
+      function(currentWindow){
+        state.recordingWindow = currentWindow;
+        state.origWindowSize = {
+          left: currentWindow.left,
+          top: currentWindow.top,
+          width: currentWindow.width,
+          height: currentWindow.height
+        };
+        return resolve();
+      }
+    );
+  });
 };
 
 var restoreWindowSize = function(){
-  chrome.windows.getLastFocused({populate: false}, //getCurrent
-    function(currentWindow){ 
-      chrome.windows.update(currentWindow.id, state.origWindowSize);
+  // chrome.windows.getLastFocused({populate: false}, //getCurrent
+  //   function(currentWindow){ 
+  //     chrome.windows.update(currentWindow.id, state.origWindowSize);
+  //   });
+  return new Promise(function(resolve, reject){
+    chrome.windows.update(state.recordingWindow.id, state.origWindowSize, 
+    function(){
+      return resolve();
     });
+  });
 };
+
 var setWindowSize = function(left, top, width, height) {
-  chrome.windows.getLastFocused({populate: false}, //getCurrent
-    function(currentWindow){ 
-      chrome.windows.update(currentWindow.id, {
-        left:left,
-        top:top,
-        width:width,
-        height:height
-      });
+  return new Promise(function(resolve, reject){
+    chrome.windows.update(state.recordingWindow.id, {
+      left:left,
+      top:top,
+      width:width,
+      height:height,
+      state: 'normal'
+    }, function(w){
+      return resolve();
     });
+  });
 };
+
 var setMobileWindowSize = function(device){
   var maxWidth = window.screen.availWidth;
   var maxHeight = window.screen.availHeight;
   var left = Math.round((maxWidth - device.width)/2);
   var top = 0; //Math.round((maxHeight - device.height)/2);
-  setWindowSize(left, top, device.width, device.height);
+  return setWindowSize(left, top, device.width, device.height);
+};
+var setDesktopWindowSize = function(){
+  console.log('setDesktopWindowSize');
+  var maxWidth = window.screen.availWidth;
+  var maxHeight = window.screen.availHeight;
+  var left = props.panelInitWidth;
+  var top = 0;
+  var width = maxWidth - left;
+  var height = maxHeight;
+  console.log(left, top, width, height);
+  return setWindowSize(left, top, width, height);
+};
+
+var setWindowSizeByDeviceType = function(deviceType){
+  if(deviceType == 'mobile'){
+    return setMobileWindowSize(MOBILE_INFO.iphonex);
+  }else{
+    return setDesktopWindowSize();
+  }
 };
 
 var createPanel = function(){
-  chrome.windows.create({
-    url: chrome.extension.getURL('src/background/panel.html'),
-    left: 0,
-    top: 0,
-    width: 400,
-    height: window.screen.availHeight,
-    focused: false,
-    state: "normal",
-    type: "popup"
-  }, function(panelWindow){
-    // chrome.windows.update(panelWindow.id, {state:'normal'});
-    state.panelWindowID = panelWindow.id;
+  return new Promise(function(resolve, reject){
+    chrome.windows.create({
+      url: chrome.extension.getURL('src/background/panel.html'),
+      left: 0,
+      top: 0,
+      width: props.panelInitWidth,
+      height: window.screen.availHeight,
+      focused: false,
+      state: "normal",
+      type: "popup"
+    }, function(panelWindow){
+      // chrome.windows.update(panelWindow.id, {state:'normal'});
+      state.panelWindowID = panelWindow.id;
+      return resolve();
+    });
   });
 };
 
 var deletePanel = function(){
-  chrome.windows.remove(state.panelWindowID);
+  return new Promise(function(resolve, reject){
+    chrome.windows.remove(state.panelWindowID, function(){
+      return resolve();
+    });
+  });
 };
 
 var sendStepsToPanel = function(steps, state){
   //{type:'command', steps:recorded.actions, state:state}
-  chrome.tabs.sendMessage(state.panelTabID, {type:'steps', steps:steps, state:state}, function(response) {
-    console.log('command sent to panel');
+  return new Promise(function(resolve, reject){
+    chrome.tabs.sendMessage(state.panelTabID, {type:'steps', steps:steps, state:state}, function(response) {
+      console.log('command sent to panel');
+      return resolve();
+    });
   });
 };

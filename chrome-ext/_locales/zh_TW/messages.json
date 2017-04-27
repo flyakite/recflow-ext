@@ -11,8 +11,12 @@
     "message": "如果當前頁面需要特殊權限才看的到，請從登入開始錄製。",
     "description":""
   },
-  "recordBtn": {
-    "message":"進入錄製模式",
+  "recordMobileBtn": {
+    "message":"錄製行動網頁測試腳本",
+    "description":""
+  },
+  "recordDesktopBtn": {
+    "message":"錄製桌面網頁測試腳本",
     "description":""
   },
   "finishBtn": {

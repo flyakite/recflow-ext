@@ -3,13 +3,16 @@
 <style type="text/css">
 	#mainPopup {
 		padding: 10px;
-		height: 200px;
+		height: 400px;
 		width: 300px;
 		font-family: Helvetica, Ubuntu, Arial, sans-serif;
 	}
 	h1 {
 		font-size: 2em;
 	}
+  .margin-top{
+    margin-top: 10px;
+  }
   .btn {
     font-size: 16px;
     padding: 10px 15px;
@@ -60,8 +63,11 @@
       If it requires an authentication to access the page, please start to record from logging in.
     </p>
     <div>
-      <button id="recordBtn" class="btn record-btn">
-        Enter Recording Mode
+      <button id="recordMobileBtn" class="btn record-btn margin-top">
+        Record a mobile test scenario
+      </button>
+      <button id="recordDesktopBtn" class="btn record-btn margin-top">
+        Record a desktop test scenario
       </button>
       <!--button id="assert-btn" class="btn mode-btn">
         Enter Assertion Mode
